@@ -15,11 +15,15 @@ from simulation.simulator import Simulation
 #from environment.wind import NoWind
 #from utils.coordinates import hor2body
 
-from simulation.autopilot import Controller
+from simulation.autopilot_takeoff import TakeoffController
+from state.aircraft_state import AircraftState
+from state.position import EarthPosition
+from state.velocity import BodyVelocity
+from state.attitude import EulerAttitude
 
+from systems.euler_flat_earth_ground import EulerFlatEarthGround
 
-
-class FlightSim(Simulation):
+class TakeoffSim(Simulation):
     default_save_vars = {
 #        'elev_CL': 'aircraft.elev_CL',
 #        'elev_CD': 'aircraft.elev_CD',
@@ -98,13 +102,29 @@ class FlightSim(Simulation):
             the object and attribute where it is calculated. If not given, the
             ones set in `_default_save_vars` are used.
         """
-        self.system = copy.deepcopy(system)
+#        self.system = copy.deepcopy(system)
         self.aircraft = copy.deepcopy(aircraft)
         self.environment = copy.deepcopy(environment)
 
-        self.system.update_simulation = self.update
 
-        self.controller = Controller(self, trimmed_controls=trimmed_controls)
+
+
+        
+        
+        att0 = EulerAttitude(theta=0, phi=0, psi=np.pi/2)
+        vel0 = BodyVelocity(u=0.01, v=0, w=0, attitude=att0)
+    # Full state
+        pos0 = EarthPosition(0, 0, 500)
+        state0 = AircraftState(pos0, att0, vel0)
+        
+        self.system = EulerFlatEarthGround(t0=0, full_state=state0)
+        self.system.update_simulation = self.update
+        
+        self.controller = TakeoffController(self, trimmed_controls=trimmed_controls)
+        self.controller.controls['delta_t'] = 0.0
+        
+        
+        
         self.ground_station = None
 
         self.dt = dt
@@ -152,9 +172,19 @@ class FlightSim(Simulation):
         print('running..')
         while self.system.time + dt < time_plus_half_dt:
             t = self.system.time
+            
+            
+            
+            
+            
+            
             self.environment.update(self.system.full_state)
 #            controls = self._get_current_controls(t)
 #            self.aircraft.controls = self._get_current_controls(t)
+            
+            
+            
+            
             self.controller.update(t)
             cur_controls = self.controller.controls
             self.aircraft._set_current_controls(cur_controls)
@@ -162,8 +192,16 @@ class FlightSim(Simulation):
 #            print('--', cur_controls)
             self.aircraft.calculate_forces_and_moments(self.system.full_state,
                                                        self.environment, cur_controls)
+            
+            
+            
             self.system.time_step(dt)
+            
+            
+
+            
             self._save_time_step()
+            
             bar.update(dt)
 #            self.update_hud(axes)
 #            plt.pause(0.05)
@@ -175,32 +213,7 @@ class FlightSim(Simulation):
 
         return results
 
-    def update_hud(self, axes):
-        hud_ax, otro_ax, nutte_ax = axes
-        
-        phi = self.system.full_state.attitude.phi
-        psi = self.system.full_state.attitude.psi
-        theta = self.system.full_state.attitude.theta
-#        print('phi ', phi)
-        rise_line = np.cos(theta) * np.cos(phi)
-        hud_ax.plot([[np.cos(phi), np.sin(phi)],
-                     [-np.cos(phi), -np.sin(phi)]])
-        
-#        hud_ax.plot([np.cos(phi), np.sin(phi)])
-#        hud_ax.plot([-np.cos(phi), -np.sin(phi)])
-#        
-        
-#        roll_line = np.asin(1 / )
-#        hz_line = 
-        
-#        self.controller.target_body_dir
-        
-#        hud_ax.scatter()
-        plt.pause(0.05)
     def _save_time_step(self):
-        """Saves the selected variables for the current system, environment
-        and aircraft.
-        """
         for var_name, value_pointer in self._save_vars.items():
             self.results[var_name].append(
                 operator.attrgetter(value_pointer)(self)
@@ -209,28 +222,27 @@ class FlightSim(Simulation):
     def _get_current_controls(self, time):
         return self.controller.controls
 
-#    def _get_current_controls(self, time):
-#        """Get the control values for the current time step for the given
-#        input functions.
-#
-#        Parameters
-#        ----------
-#        time : float
-#            Current time value.
-#
-#        Returns
-#        -------
-#        controls : dict
-#            Control value for each control
-#
-#        Notes
-#        -----
-#        Current controls are only a function of time in this kind of
-#        simulation (predefined inputs). However, if the AP is active,
-#        controls will be also function of the system state and environment.
-#        """
-#        c = {c_name: c_fun(time) for c_name, c_fun in self.controls.items()}
-#        return c
 
 
-
+#    def update_hud(self, axes):
+#        hud_ax, otro_ax, nutte_ax = axes
+#        
+#        phi = self.system.full_state.attitude.phi
+#        psi = self.system.full_state.attitude.psi
+#        theta = self.system.full_state.attitude.theta
+##        print('phi ', phi)
+#        rise_line = np.cos(theta) * np.cos(phi)
+#        hud_ax.plot([[np.cos(phi), np.sin(phi)],
+#                     [-np.cos(phi), -np.sin(phi)]])
+#        
+##        hud_ax.plot([np.cos(phi), np.sin(phi)])
+##        hud_ax.plot([-np.cos(phi), -np.sin(phi)])
+##        
+#        
+##        roll_line = np.asin(1 / )
+##        hz_line = 
+#        
+##        self.controller.target_body_dir
+#        
+##        hud_ax.scatter()
+#        plt.pause(0.05)

@@ -18,7 +18,7 @@ from abc import abstractmethod
 
 from environment.anemometry import tas2cas, tas2eas, calculate_alpha_beta_TAS
 
-class ModCraft(Cessna172):
+class ElectricGlider(Cessna172):
     def __init__(self):
         super().__init__()
         # LDY are forces
@@ -186,12 +186,12 @@ class ModCraft(Cessna172):
         self.Mach = self.TAS / environment.a
         self.q_inf = 0.5 * environment.rho * self.TAS ** 2
 
-    def normal_force(self, z_earth, downforce):
-        normal_force = np.zeros(3)
-        if z_earth < self.ground_altitude:
-            if downforce > 0:
-                normal_force = -downforce
-        return normal_force
+    def normal_force(self, z_earth, z_force):
+        Fn = np.zeros(3)
+        if -z_earth < self.ground_altitude:
+            if z_force > 0:
+                Fn = -z_force
+        return Fn
     
     def calculate_forces_and_moments(self, state, environment, controls):
         # Update controls and aerodynamics
@@ -206,9 +206,6 @@ class ModCraft(Cessna172):
         Fa = Fa_body
         
         Fn = self.normal_force(state.position.z_earth, (Ft + Fg + Fa)[2])
-        
-                
-        
 
         self.total_forces = Ft + Fg + Fa + Fn
         self.total_moments = np.array([l, m, n])

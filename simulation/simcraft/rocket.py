@@ -35,7 +35,8 @@ class Missile(Aircraft):
         self.chord = 0.150  # m
         self.span = 0.71184  # m
         self.propeller_radius = 0.015  # m
-
+        self.solid_fuel_nominal_thrust = 300.0 # N
+        
         # Aerodynamic Data
         # Obtained with the referred methods
         self.alpha_data = np.array([-7.5, -5, -2.5, 0, 2.5, 5, 7.5, 10, 15, 17, 18, 19.5])  # degree
@@ -268,13 +269,27 @@ class Missile(Aircraft):
         J = (np.pi * V) / (omega_RAD * prop_rad)  # non-dimensional
         Ct_interp = np.interp(J, self.J_data, self.Ct_data)  # non-dimensional
 
-        T = (2/np.pi)**2 * rho * (omega_RAD * prop_rad)**2 * Ct_interp  # N
+#        T = (2/np.pi)**2 * rho * (omega_RAD * prop_rad)**2 * Ct_interp  # N
+        
+        T = self.solid_fuel_thrust(rho, V, delta_t)
 
         # We will consider that the engine is aligned along the OX (body) axis
         Ft = np.array([T, 0, 0])
 
         return Ft
-
+    
+    def solid_fuel_thrust(self, rho, V, delta_t):
+        T = (2/np.pi)**2 * delta_t * rho * V * self.solid_fuel_nominal_thrust
+        return T    
+        
+        
+    def normal_force(self, z_earth, downforce):
+        normal_force = np.zeros(3)
+        if z_earth < self.ground_altitude:
+            if downforce > 0:
+                normal_force = -downforce
+        return normal_force
+    
     def calculate_forces_and_moments(self, state, environment, controls):
         # Update controls and aerodynamics
         super().calculate_forces_and_moments(state, environment, controls)
@@ -286,8 +301,13 @@ class Missile(Aircraft):
         Fa_wind = np.array([-D, Y, -L])
         Fa_body = wind2body(Fa_wind, self.alpha, self.beta)
         Fa = Fa_body
+        
+        Fn = self.normal_force(state[11], (Ft + Fg + Fa)[2])
+        
+                
+        
 
-        self.total_forces = Ft + Fg + Fa
+        self.total_forces = Ft + Fg + Fa + Fn
         self.total_moments = np.array([l, m, n])
 
         return self.total_forces, self.total_moments

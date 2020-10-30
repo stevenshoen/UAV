@@ -78,7 +78,7 @@ def environ_plot(res):
 def telem_plot(res):
     
     labs = ['theta', 'phi', 'psi']
-    fig, axs = plt.subplots(len(labs), 1)
+    fig, axs = plt.subplots(len(labs), 1, fig=plt.Figure('telem'))
     for i, l in enumerate(labs):
         axs[i].set_ylabel(l)
         axs[i].plot(range(len(res[l])), res[l], label=l)

@@ -13,7 +13,7 @@ from signal_processing.PID_control import pd_signal
 from simulation.simtools import Target, MappedVariable
 from utils.constants import GRAVITY
 
-class Controller:
+class TakeoffController:
     """
     monitor potential/kinetic energy
     
@@ -43,7 +43,11 @@ class Controller:
         self.controls = trimmed_controls
         self.control_names = list(trimmed_controls)
         self.sim = sim
-        self.ground_level = 500.0 
+        
+        #setup
+        self.ground_level = 500.0
+        self.takeoff_heading = sim.system.full_state.attitude.psi
+        self.mode = 'takeoff'
         
         self.nominal_energy = sim.aircraft.mass * sim.aircraft.TAS + sim.aircraft.mass * -sim.system.full_state.position.z_earth * GRAVITY
         self.current_energy = self.nominal_energy
@@ -51,24 +55,20 @@ class Controller:
         self.update_time_delta = 0.1 #sec
         self.time = 0.0 # independent clock
         
-        self.alpha = sim.aircraft.alpha
+        self.alpha = sim.aircraft.alpha #rolling alpha
         
-        self.initialized = False
-        
+        self.initialized = False #variable maps
         self.pitch_effection = MappedVariable()
         self.roll_effection = MappedVariable()
         
+        #PD coefficients
         roll_p = -0.015
         roll_d = -0.01
         self.roll_pd = pd_signal(roll_p, roll_d)
         
-        
-        
         pitch_p = 0.9
         pitch_d = 0.9
         self.pitch_pd = pd_signal(pitch_p, pitch_d)
-    
-    
     
         thrust_p = -0.1
         thrust_d = -0.01
@@ -103,9 +103,16 @@ class Controller:
         
         
         """
-        
-        return self.controls
-        
+        if self.sim.aircraft.TAS < self.TAKEOFF_SPEED:
+            
+            trim_amount = 0.0001
+            floor_noise = 0.01
+            
+            if self.sim.system.full_state.attitude < floor_noise\
+            or self.sim.system.full_state.velocity.z < 0.0:
+                self.controls['delta_t'] -= trim_amount
+        else:
+            
 
     def update(self, time):
         if time < self.time + self.update_time_delta:
@@ -131,13 +138,14 @@ class Controller:
         
         
         """
-        
-        self.read_effection()
+
         
         
         
         if self.mode == 'takeoff':
             return self.takeoff_update(time)
+        
+        self.read_effection()
         
         energy_error, energy_error_dot = self.energy_monitor()
         thrust_correction = self.thrust_pd(energy_error, energy_error_dot)

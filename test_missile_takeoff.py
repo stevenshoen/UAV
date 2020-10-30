@@ -5,11 +5,11 @@ from environment.gravity import VerticalConstant
 from environment.wind import NoWind
 from state.position import EarthPosition
 from simulation.trimmer import steady_state_trim
-from systems.euler_flat_earth import EulerFlatEarth
+from systems.euler_flat_earth_ground import EulerFlatEarthGround
 #from pyfme.simulator import Simulation
 from simulation.modsim import ModSim, Wind
 
-from simulation.flightsim import FlightSim
+from simulation.flightsim_takeoff import TakeoffSim
 from simulation.simulator import Simulation
 
 from simulation.simcraft.rocket import Missile
@@ -41,18 +41,18 @@ trimmed_state, trimmed_controls = steady_state_trim(
     controls=controls_0
 )
 
-system = EulerFlatEarth(t0=0, full_state=trimmed_state)
+system = EulerFlatEarthGround(t0=0, full_state=trimmed_state)
 
 #trimmed_controls['delta_elevator'] *= -1 # not sure why this is coming out backwards
 
 
 #simulation = ModSim(aircraft, system, environment, trimmed_controls)
-simulation = FlightSim(aircraft, system, environment, trimmed_controls, dt=0.01)
+simulation = TakeoffSim(aircraft, system, environment, trimmed_controls, dt=0.01)
 #simulation = Simulation(aircraft, system, environment, trimmed_controls)
 
 #simulation.ground_station = GroundStation()
 
-simulation.propagate(20.0)
+simulation.propagate(5.0)
 
 res = simulation.results
 
