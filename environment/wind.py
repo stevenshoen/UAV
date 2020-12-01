@@ -16,32 +16,39 @@ class Wind(object):
         # Wind velocity in the UPSIDE direction
         self.horizon = np.zeros([3], dtype=float)
         self.body = np.zeros([3], dtype=float)
-        self.count = 0
-        self.freq = .01
-        self.mag = 0.50
-        self.clip = 3.0
-        self.steady = 5.0
-        self.transient = 0.0
+        self.freq = [0.01, 0.001]
+        self.mag = 0.2
+        self.clip = 10.0
+        self.steady = np.array([1.0, 1.0, 0.0])
+        self.transient = np.array([3.0, 3.0, 0.0])
+        self.max_transient = 3.0
+    @property
+    def x(self):
+        return self.body[0]        
+    @property
+    def y(self):
+        return self.body[1]
+    @property
+    def z(self):
+        return self.body[2]
         
-    def sin_wind(self):
-        return np.array([self.steady + self.transient * np.sin(self.freq * self.count),
-                  self.steady + self.transient * np.sin(self.freq * self.count),
+    def sin_wind(self, t):
+        self.transient = np.array([self.max_transient * np.sin(self.freq[0] * t),
+                  self.max_transient * np.sin(self.freq[1] * t),
                   0.0], dtype=float)
+        return self.steady + self.transient
         
     def rand_wind(self):
-        t = self.mag/2 * (np.random.random(3) - 1/2)
-        self.transient = np.clip(self.transient + t, -self.clip, self.clip)
+        trans = np.append(self.mag/2 * (np.random.random(2) - 1/2), 0.0)
+        self.transient = np.clip(self.transient + trans, -self.max_transient, self.max_transient)
 #        self.transient += self.mag * np.random.random(3)
 #        self.transient = np.clip(self.transient, -self.clip, self.clip)
-        return self.steady + self.transient  
+        return np.clip(self.steady + self.transient, -self.clip, self.clip)
     
-    def update(self, state):
+    def update(self, state, t=None):
+        if type(t) == type(None): return
         self.body = self.rand_wind()
-#        print('wind -', self.body)
-#        self.count += 1
         
-        pass
-    
 class NoWind(object):
 
     def __init__(self):

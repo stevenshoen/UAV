@@ -32,17 +32,19 @@ class Missile(Aircraft):
 
         # Geometry
         self.Sw = .25  # m2
-        self.chord = 0.150  # m
-        self.span = 0.71184  # m
+        self.chord = 0.15  # m
+        self.span = 0.10  # m
         self.propeller_radius = 0.015  # m
-        self.solid_fuel_nominal_thrust = 300.0 # N
+        self.solid_fuel_nominal_thrust = 500.0 # N
         
         # Aerodynamic Data
         # Obtained with the referred methods
         self.alpha_data = np.array([-7.5, -5, -2.5, 0, 2.5, 5, 7.5, 10, 15, 17, 18, 19.5])  # degree
-        self.delta_elev_data = np.array([-26, -20, -10, -5, 0, 7.5, 15, 22.5, 28])  # degree
-        self.delta_aile_data = np.array([-15, -10, -5, -2.5, 0, 5, 10, 15, 20])  # degree
-
+#        self.delta_elev_data = np.array([-26, -20, -10, -5, 0, 7.5, 15, 22.5, 28])  # degree
+#        self.delta_aile_data = np.array([-15, -10, -5, -2.5, 0, 5, 10, 15, 20])  # degree
+        self.delta_elev_data = np.array([-30, -25, -10, -5, 0, 5, 10, 25, 30])  # degree
+        self.delta_aile_data = np.array([-30, -25, -10, -5, 0, 5, 10, 25, 30])  # degree
+        
         self.CD_data = np.array([0.044, 0.034, 0.03, 0.03, 0.036, 0.048, 0.067, 0.093, 0.15, 0.169, 0.177, 0.184])
         self.CD_delta_elev_data = np.array([[0.0135, 0.0119, 0.0102, 0.00846, 0.0067, 0.0049, 0.00309, 0.00117, -0.0033, -0.00541, -0.00656, -0.00838],
                                             [0.0121, 0.0106, 0.00902, 0.00738, 0.00574, 0.00406, 0.00238, 0.00059, -0.00358, -0.00555, -0.00661, -0.00831],
@@ -101,13 +103,21 @@ class Missile(Aircraft):
                          'delta_rudder': 0,
                          'delta_t': 0}
 
-        self.control_limits = {'delta_elevator': (np.deg2rad(-26),
-                                                  np.deg2rad(28)),  # rad
-                               'delta_aileron': (np.deg2rad(-15),
-                                                 np.deg2rad(20)),  # rad
+        self.control_limits = {'delta_elevator': (np.deg2rad(-30),
+                                                  np.deg2rad(30)),  # rad
+                               'delta_aileron': (np.deg2rad(-30),
+                                                 np.deg2rad(30)),  # rad
                                'delta_rudder': (np.deg2rad(-16),
                                                 np.deg2rad(16)),  # rad
                                'delta_t': (0, 1)}  # non-dimensional
+#
+#        self.control_limits = {'delta_elevator': (np.deg2rad(-26),
+#                                                  np.deg2rad(28)),  # rad
+#                               'delta_aileron': (np.deg2rad(-15),
+#                                                 np.deg2rad(20)),  # rad
+#                               'delta_rudder': (np.deg2rad(-16),
+#                                                np.deg2rad(16)),  # rad
+#                               'delta_t': (0, 1)}  # non-dimensional
 
         # Aerodynamic Coefficients
         self.CL, self.CD, self.Cm = 0, 0, 0
@@ -147,6 +157,78 @@ class Missile(Aircraft):
     @property
     def delta_t(self):
         return self.controls['delta_t']
+
+    def _calculate_control_lat_moments_coeffs(self, ctl_ail):
+        delta_aile = np.rad2deg(ctl_ail)  # deg
+        delta_rud_RAD = 0.0  # rad
+        alpha_DEG = np.rad2deg(self.alpha)  # deg
+
+        Cl_delta_rud = np.interp(alpha_DEG, self.alpha_data, self.Cl_delta_rud_data)
+        Cl_delta_aile_interp = np.interp(delta_aile, self.delta_aile_data, self.Cl_delta_aile_data)
+
+        CN_delta_rud = np.interp(alpha_DEG, self.alpha_data, self.CN_delta_rud_data)
+        CN_delta_aile_interp_ = RectBivariateSpline(self.delta_aile_data,
+                                                    self.alpha_data,
+                                                    self.CN_delta_aile_data)
+        CN_delta_aile_interp = CN_delta_aile_interp_(delta_aile, alpha_DEG)[0, 0]
+
+        q = self.q_inf
+        Sw = self.Sw
+        b = self.span
+        
+        Cl = q * Sw * b * (
+            Cl_delta_aile_interp +
+            0.075*Cl_delta_rud * delta_rud_RAD)
+        # XXX: Tunned CN_delta_rud
+        CN = q * Sw * b * (CN_delta_aile_interp +
+            0.075*CN_delta_rud * delta_rud_RAD)
+            
+        
+        return Cl / self.inertia[0, 0]
+
+    def _calculate_control_lon_moments_coeffs(self, ctl_elev):
+        delta_elev = np.rad2deg(ctl_elev)  # deg
+        alpha_DEG = np.rad2deg(self.alpha)  # deg
+
+        CM_alpha_interp = np.interp(alpha_DEG, self.alpha_data, self.CM_data)
+        CM_delta_elev_interp = np.interp(delta_elev, self.delta_elev_data, self.CM_delta_elev_data)
+
+        q = self.q_inf
+        Sw = self.Sw
+        c = self.chord
+                
+        CM = q * Sw * c * (CM_alpha_interp + CM_delta_elev_interp)
+        return CM / self.inertia[1, 1]
+        
+    def _calculate_body_lat_moments_coeffs(self):
+        alpha_DEG = np.rad2deg(self.alpha)  # deg
+        Cl_beta = np.interp(alpha_DEG, self.alpha_data, self.Cl_beta_data)
+        CN_beta = np.interp(alpha_DEG, self.alpha_data, self.CN_beta_data)
+        
+        q = self.q_inf
+        Sw = self.Sw
+        b = self.span
+
+        Cl = q * Sw * b * (0.1*Cl_beta * self.beta)
+        CN = q * Sw * b * (CN_beta * self.beta)
+        return Cl / self.inertia[0, 0]
+
+        
+    def _calculate_body_lon_moments_coeffs(self):
+        alpha_DEG = np.rad2deg(self.alpha)  # deg
+#        V = self.TAS  # m/s
+#        alpha_dot = self.alpha_dot
+        CM_alpha_interp = np.interp(alpha_DEG, self.alpha_data, self.CM_data)
+        
+        q = self.q_inf
+        Sw = self.Sw
+        c = self.chord
+        CM_alpha_interp *= q * Sw * c
+        return CM_alpha_interp / self.inertia[1, 1]
+        
+
+
+
 
     def _calculate_aero_lon_forces_moments_coeffs(self, state):
         delta_elev = np.rad2deg(self.controls['delta_elevator'])  # deg
@@ -269,10 +351,10 @@ class Missile(Aircraft):
         J = (np.pi * V) / (omega_RAD * prop_rad)  # non-dimensional
         Ct_interp = np.interp(J, self.J_data, self.Ct_data)  # non-dimensional
 
-#        T = (2/np.pi)**2 * rho * (omega_RAD * prop_rad)**2 * Ct_interp  # N
+        T = (2/np.pi)**2 * rho * (omega_RAD * prop_rad)**2 * Ct_interp  # N
         
-        T = self.solid_fuel_thrust(rho, V, delta_t)
-
+#        T = self.solid_fuel_thrust(rho, V, delta_t)
+#
         # We will consider that the engine is aligned along the OX (body) axis
         Ft = np.array([T, 0, 0])
 
@@ -302,12 +384,12 @@ class Missile(Aircraft):
         Fa_body = wind2body(Fa_wind, self.alpha, self.beta)
         Fa = Fa_body
         
-        Fn = self.normal_force(state[11], (Ft + Fg + Fa)[2])
+#        Fn = self.normal_force(state.position.z_earth, (Ft + Fg + Fa)[2])
         
                 
         
 
-        self.total_forces = Ft + Fg + Fa + Fn
+        self.total_forces = Ft + Fg + Fa
         self.total_moments = np.array([l, m, n])
 
         return self.total_forces, self.total_moments

@@ -101,7 +101,7 @@ class BodyVelocity(Velocity):
                                  attitude.psi)  # m/s
 
     def __repr__(self):
-        return f"u: {self.u:.2f} m/s, v: {self.v:.2f} m/s, w: {self.w:.2f} m/s"
+        return "u: {self.u:.2f} m/s, v: {self.v:.2f} m/s, w: {self.w:.2f} m/s"
 
 
 class NEDVelocity(Velocity):
@@ -118,6 +118,4 @@ class NEDVelocity(Velocity):
                                   attitude.psi)  # m/s
 
     def __repr__(self):
-        return (f"V_north: {self.v_north:.2f} m/s,"
-                f"V_east: {self.v_east:.2f} m/s, "
-                f"V_down: {self.v_down:.2f} m/s")
+        return ("V_north: {self.v_north:.2f} m/s, V_east: {self.v_east:.2f} m/s, V_down: {self.v_down:.2f} m/s")

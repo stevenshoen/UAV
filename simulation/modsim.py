@@ -9,11 +9,11 @@ import copy
 import operator
 import numpy as np
 import pandas as pd
-import tqdm
+#import tqdm
 import matplotlib.pyplot as plt
-from pyfme.simulator import Simulation
-from pyfme.environment.wind import NoWind
-from pyfme.utils.coordinates import hor2body
+from simulation.simulator import Simulation
+from environment.wind import NoWind
+from utils.coordinates import hor2body
 
 class Target(object):
     def __init__(self, pos=np.array([1000.0, 0.0, 1000.0])):
@@ -418,7 +418,7 @@ class ModSim(Simulation):
         dt = self.dt
         half_dt = self.dt/2
 
-        bar = tqdm.tqdm(total=time, desc='time', initial=self.system.time)
+#        bar = tqdm.tqdm(total=time, desc='time', initial=self.system.time)
 #        fig, axes = plt.subplots(1, 3)
         # To deal with floating point issues we cannot check equality to
         # final time to finish propagation
@@ -438,11 +438,11 @@ class ModSim(Simulation):
                                                        self.environment, cur_controls)
             self.system.time_step(dt)
             self._save_time_step()
-            bar.update(dt)
+#            bar.update(dt)
 #            self.update_hud(axes)
 #            plt.pause(0.05)
 #        plt.show()
-        bar.close()
+#        bar.close()
 
         results = pd.DataFrame(self.results)
         results.set_index('time', inplace=True)

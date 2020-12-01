@@ -13,7 +13,7 @@ import copy
 import operator
 
 import pandas as pd
-import tqdm
+#import tqdm
 
 
 class Simulation:
@@ -156,7 +156,7 @@ class Simulation:
         dt = self.dt
         half_dt = self.dt/2
 
-        bar = tqdm.tqdm(total=time, desc='time', initial=self.system.time)
+#        bar = tqdm.tqdm(total=time, desc='time', initial=self.system.time)
 
         # To deal with floating point issues we cannot check equality to
         # final time to finish propagation
@@ -170,9 +170,9 @@ class Simulation:
                                                        controls)
             self.system.time_step(dt)
             self._save_time_step()
-            bar.update(dt)
+#            bar.update(dt)
 
-        bar.close()
+#        bar.close()
 
         results = pd.DataFrame(self.results)
         results.set_index('time', inplace=True)

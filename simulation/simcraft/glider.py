@@ -24,6 +24,9 @@ class ElectricGlider(Cessna172):
         # LDY are forces
         # lmn are moments
         self.ground_altitude = 500 #m
+        
+        self.lift = 0.0
+        self.drag = 0.0
         #lateral
         
         self.elev_CL = 0.0
@@ -38,6 +41,55 @@ class ElectricGlider(Cessna172):
         self.ail_CN = 0.0
         self.rud_CN = 0.0
 
+    def _calculate_control_lat_moments_coeffs(self, state):
+        delta_aile = np.rad2deg(self.controls['delta_aileron'])  # deg
+        delta_rud_RAD = self.controls['delta_rudder']  # rad
+        alpha_DEG = np.rad2deg(self.alpha)  # deg
+
+        Cl_delta_rud = np.interp(alpha_DEG, self.alpha_data, self.Cl_delta_rud_data)
+        Cl_delta_aile_interp = np.interp(delta_aile, self.delta_aile_data, self.Cl_delta_aile_data)
+
+        CN_delta_rud = np.interp(alpha_DEG, self.alpha_data, self.CN_delta_rud_data)
+        CN_delta_aile_interp_ = RectBivariateSpline(self.delta_aile_data,
+                                                    self.alpha_data,
+                                                    self.CN_delta_aile_data)
+        CN_delta_aile_interp = CN_delta_aile_interp_(delta_aile, alpha_DEG)[0, 0]
+
+        Cl = (
+            Cl_delta_aile_interp +
+            0.075*Cl_delta_rud * delta_rud_RAD)
+        # XXX: Tunned CN_delta_rud
+        CN = (CN_delta_aile_interp +
+            0.075*CN_delta_rud * delta_rud_RAD)
+        return Cl, CN
+
+    def _calculate_control_lon_moments_coeffs(self, state):
+        delta_elev = np.rad2deg(self.controls['delta_elevator'])  # deg
+        alpha_DEG = np.rad2deg(self.alpha)  # deg
+
+        CM_alpha_interp = np.interp(alpha_DEG, self.alpha_data, self.CM_data)
+        CM_delta_elev_interp = np.interp(delta_elev, self.delta_elev_data, self.CM_delta_elev_data)
+
+        CM = (CM_alpha_interp + CM_delta_elev_interp)
+        return CM
+        
+    def _calculate_body_lat_moments_coeffs(self, state):
+        alpha_DEG = np.rad2deg(self.alpha)  # deg
+        Cl_beta = np.interp(alpha_DEG, self.alpha_data, self.Cl_beta_data)
+        CN_beta = np.interp(alpha_DEG, self.alpha_data, self.CN_beta_data)
+        Cl = (0.1*Cl_beta * self.beta)
+        CN = (CN_beta * self.beta)
+        return Cl, CN
+
+        
+    def _calculate_body_lon_moments_coeffs(self, state):
+        alpha_DEG = np.rad2deg(self.alpha)  # deg
+        c = self.chord  # m
+        V = self.TAS  # m/s
+        alpha_dot = self.alpha_dot
+        CM_alpha_interp = np.interp(alpha_DEG, self.alpha_data, self.CM_data)
+        return CM_alpha_interp
+        
     def _calculate_aero_lon_forces_moments_coeffs(self, state):
         delta_elev = np.rad2deg(self.controls['delta_elevator'])  # deg
         alpha_DEG = np.rad2deg(self.alpha)  # deg
@@ -76,9 +128,9 @@ class ElectricGlider(Cessna172):
             c/(2*V) * (2*CM_q * q + CM_alphadot * alpha_dot)
         )
         
-        self.elev_CL = CL_delta_elev_interp / delta_elev
-        self.elev_CD = CD_delta_elev_interp / delta_elev
-        self.elev_CM = CM_delta_elev_interp / delta_elev
+#        self.elev_CL = CL_delta_elev_interp / delta_elev
+#        self.elev_CD = CD_delta_elev_interp / delta_elev
+#        self.elev_CM = CM_delta_elev_interp / delta_elev
         
         # FIXME: CM_q multiplicado por 2 hasta que alpha_dot pueda ser calculado
 
@@ -130,11 +182,11 @@ class ElectricGlider(Cessna172):
             b/(2 * V) * (CN_p * p + CN_r * r)
         )
         
-        self.rud_CY = (CY_delta_rud)
-        self.ail_Cl = Cl_delta_aile_interp / delta_aile
-        self.rud_Cl = 0.075*Cl_delta_rud
-        self.ail_CN = CN_delta_aile_interp / delta_aile
-        self.rud_CN = 0.075*CN_delta_rud
+#        self.rud_CY = (CY_delta_rud)
+#        self.ail_Cl = Cl_delta_aile_interp / delta_aile
+#        self.rud_Cl = 0.075*Cl_delta_rud
+#        self.ail_CN = CN_delta_aile_interp / delta_aile
+#        self.rud_CN = 0.075*CN_delta_rud
 
     def _calculate_aero_forces_moments(self, state):
         q = self.q_inf
@@ -195,10 +247,14 @@ class ElectricGlider(Cessna172):
     
     def calculate_forces_and_moments(self, state, environment, controls):
         # Update controls and aerodynamics
-        super().calculate_forces_and_moments(state, environment, controls)
-
+#        super().calculate_forces_and_moments(state, environment, controls)
+        self._set_current_controls(controls)
+        self._calculate_aerodynamics(state, environment)
+        
         Ft = self._calculate_thrust_forces_moments(environment)
         L, D, Y, l, m, n = self._calculate_aero_forces_moments(state)
+        self.lift = L
+        self.drag = D
         Fg = environment.gravity_vector * self.mass
 
         Fa_wind = np.array([-D, Y, -L])

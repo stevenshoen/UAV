@@ -140,10 +140,7 @@ class EarthPosition(Position):
         # Update Earth coordinates with value
         self._earth_coordinates[:] = value
 
-    def __repr__(self):
-        rv = (f"x_e: {self.x_earth:.2f} m, y_e: {self.y_earth:.2f} m, "
-              f"z_e: {self.z_earth:.2f} m")
-        return rv
+
 
 
 class GeodeticPosition(Position):
@@ -256,10 +253,6 @@ class EulerAttitude(Attitude):
         # TODO: transform quaternions to Euler angles
         self._quaternions = np.zeros(4)
 
-    def __repr__(self):
-        rv = (f"theta: {self.theta:.3f} rad, phi: {self.phi:.3f} rad, "
-              f"psi: {self.psi:.3f} rad")
-        return rv
 
 
 class QuaternionAttitude(Attitude):
@@ -353,9 +346,6 @@ class BodyVelocity(Velocity):
                                  attitude.phi,
                                  attitude.psi)  # m/s
 
-    def __repr__(self):
-        return f"u: {self.u:.2f} m/s, v: {self.v:.2f} m/s, w: {self.w:.2f} m/s"
-
 
 class NEDVelocity(Velocity):
     def __init__(self, vn, ve, vd, attitude):
@@ -369,12 +359,6 @@ class NEDVelocity(Velocity):
                                   attitude.theta,
                                   attitude.phi,
                                   attitude.psi)  # m/s
-
-    def __repr__(self):
-        return (f"V_north: {self.v_north:.2f} m/s,"
-                f"V_east: {self.v_east:.2f} m/s, "
-                f"V_down: {self.v_down:.2f} m/s")
-
 
 class AngularVelocity:
     """Angular velocity
@@ -451,12 +435,6 @@ class BodyAngularVelocity(AngularVelocity):
         # TODO: transform angular velocity in body axis to euler angles
         # rates
         self._euler_ang_rate = np.zeros(3)  # rad/s
-
-    def __repr__(self):
-        return (f"P: {self.p:.2f} rad/s, "
-                f"Q: {self.q:.2f} rad/s, "
-                f"R: {self.r:.2f} rad/s")
-
 
 class EulerAngularRates(AngularVelocity):
 
@@ -548,13 +526,6 @@ class BodyAngularAcceleration(AngularAcceleration):
         # TODO: transform angular acc in body axis to euler angles
         # acc
         self._euler_ang_acc = np.zeros(3)  # rad/s
-
-    def __repr__(self):
-        rv = (f"P_dot: {self.p_dot:.2f} rad/s², "
-              f"Q_dot: {self.q_dot:.2f} rad/s², "
-              f"R_dot: {self.r_dot:.2f} rad/s²")
-        return rv
-
 
 class EulerAngularAcceleration(AngularAcceleration):
 
@@ -649,12 +620,6 @@ class BodyAcceleration(Acceleration):
                                    attitude.phi,
                                    attitude.psi)
 
-    def __repr__(self):
-        rv = (f"u_dot: {self.u_dot:.2f} m/s², v_dot: {self.v_dot:.2f} m/s², "
-              f"w_dot: {self.u_dot:.2f} m/s²")
-        return rv
-
-
 class NEDAcceleration(Acceleration):
 
     def __init__(self, vn_dot, ve_dot, vd_dot, attitude):
@@ -667,15 +632,6 @@ class NEDAcceleration(Acceleration):
                                     attitude.theta,
                                     attitude.phi,
                                     attitude.psi)
-
-    def __repr__(self):
-        rv = (f"V_north_dot: {self.v_north_dot:.2f} m/s², "
-              f"V_east_dot: {self.v_east_dot:.2f} m/s², "
-              f"V_down_dot: {self.v_down_dot:.2f} m/s²")
-        return rv
-
-
-
 
 
 

@@ -11,7 +11,7 @@ from abc import abstractmethod
 
 import numpy as np
 
-from pyfme.utils.anemometry import tas2cas, tas2eas, calculate_alpha_beta_TAS
+from environment.anemometry import tas2cas, tas2eas, calculate_alpha_beta_TAS
 
 
 class Aircraft(object):
@@ -100,8 +100,7 @@ class Aircraft(object):
             else:
                 # TODO: maybe raise a warning and assign max deflection
                 msg = (
-                    f"Control {control_name} out of range ({control_value} "
-                    f"when min={limits[0]} and max={limits[1]})"
+                    "Control {control_name} out of range ({control_value}"
                 )
                 raise ValueError(msg)
 

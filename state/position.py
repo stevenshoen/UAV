@@ -122,8 +122,8 @@ class EarthPosition(Position):
         # Assuming round earth use changes in x & y to calculate
         # new lat and lon. z_earth is -height:
         delta_x, delta_y, _ = value - self.earth_coordinates
-        delta_lat = delta_x / EARTH_MEAN_RADIUS
-        delta_lon = delta_y / EARTH_MEAN_RADIUS
+        delta_lat = delta_x / (EARTH_MEAN_RADIUS + value[2])
+        delta_lon = delta_y / (EARTH_MEAN_RADIUS + value[2])
         self._geodetic_coordinates = \
             np.array([self.lat + delta_lat, self.lon + delta_lon, -value[2]])
 
@@ -134,8 +134,7 @@ class EarthPosition(Position):
         self._earth_coordinates[:] = value
 
     def __repr__(self):
-        rv = (f"x_e: {self.x_earth:.2f} m, y_e: {self.y_earth:.2f} m, "
-              f"z_e: {self.z_earth:.2f} m")
+        rv = ("x_e: ", self.x_earth, "y_e: ", self.y_earth, "z_e: ", self.z_earth)
         return rv
 
 
@@ -155,8 +154,8 @@ class GeodeticPosition(Position):
         # Assuming round earth use changes in x & y to calculate
         # new x, y from lat and lon. z_earth is -height
         delta_lat, delta_lon, _ = self.geodetic_coordinates - value
-        dx_e = EARTH_MEAN_RADIUS * delta_lat
-        dy_e = EARTH_MEAN_RADIUS * delta_lon
+        dx_e = (EARTH_MEAN_RADIUS + value[2]) * delta_lat
+        dy_e = (EARTH_MEAN_RADIUS + value[2]) * delta_lon
         self._earth_coordinates[:] = \
             np.array([self.x_earth + dx_e, self.y_earth + dy_e, -value[2]])
 

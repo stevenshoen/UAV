@@ -10,11 +10,13 @@ Aircraft State
 """
 
 import numpy as np
-
-from .angular_velocity import BodyAngularVelocity
-from .acceleration import BodyAcceleration
-from .angular_acceleration import BodyAngularAcceleration
-
+#
+#from .angular_velocity import BodyAngularVelocity
+#from .acceleration import BodyAcceleration
+#from .angular_acceleration import BodyAngularAcceleration
+from state.state import BodyAngularVelocity
+from state.state import BodyAcceleration
+from state.state import BodyAngularAcceleration
 
 class AircraftState:
     def __init__(self, position, attitude, velocity, angular_vel=None,
@@ -44,12 +46,12 @@ class AircraftState:
 
     def __repr__(self):
         rv = (
-            "Aircraft State \n"
-            f"{self.position} \n"
-            f"{self.attitude} \n"
-            f"{self.velocity} \n"
-            f"{self.angular_vel} \n"
-            f"{self.acceleration} \n"
-            f"{self.angular_accel} \n"
+            "Aircraft State \n",
+            self.position,
+            self.attitude,
+            self.velocity,
+            self.angular_vel,
+            self.acceleration,
+            self.angular_accel,
         )
         return rv

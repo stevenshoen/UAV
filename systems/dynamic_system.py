@@ -16,7 +16,9 @@ the Aircraft State.
 from abc import abstractmethod
 
 import numpy as np
-from scipy.integrate import solve_ivp
+from scipy.integrate import odeint
+
+#from scipy.integrate import solve_ivp
 
 
 class DynamicSystem:
@@ -75,72 +77,72 @@ class DynamicSystem:
     def time(self):
         return self._time
 
-    def integrate(self, t_end, t_eval=None, dense_output=True):
-        """Integrate the system from current time to t_end.
-
-        Parameters
-        ----------
-        t_end : float
-            Final time.
-        t_eval : array_like, opt
-            Times at which to store the computed solution, must be sorted
-            and lie within current time and t_end. If None (default), use
-            points selected by a solver.
-        dense_output: bool, opt
-            Whether to compute a continuous solution. Default is True.
-
-        Returns
-        -------
-        t : ndarray, shape (n_points,)
-            Time points.
-        y : ndarray, shape (n, n_points)
-            Solution values at t.
-        sol : Bunch object with the following fields defined:
-            t : ndarray, shape (n_points,)
-                Time points.
-            y : ndarray, shape (n, n_points)
-                Solution values at t.
-            sol : OdeSolution or None
-                Found solution as OdeSolution instance, None if dense_output
-                was set to False.
-            t_events : list of ndarray or None
-                Contains arrays with times at each a corresponding event was
-                detected, the length of the list equals to the number of
-                events. None if events was None.
-            nfev : int
-                Number of the system rhs evaluations.
-            njev : int
-                Number of the Jacobian evaluations.
-            nlu : int
-                Number of LU decompositions.
-            status : int
-                Reason for algorithm termination:
-                -1: Integration step failed.
-                0: The solver successfully reached the interval end.
-                1: A termination event occurred.
-            message : string
-                Verbal description of the termination reason.
-            success : bool
-            True if the solver reached the interval end or a termination event
-             occurred (status >= 0).
-        """
-        # TODO: this mehtod is intended to return the whole integration history
-        # meanwhile, only time_step is called
-        # How dos it update the full system?
-        x0 = self.state_vector
-        t_ini = self.time
-
-        t_span = (t_ini, t_end)
-        method = self._method
-
-        # TODO: prepare to use jacobian in case it is defined
-        sol = solve_ivp(self.fun, t_span, x0, method=method, t_eval=t_eval,
-                        dense_output=dense_output, **self._options)
-
-        self._time = sol.t[-1]
-        self._state_vector = sol.y[:, -1]
-
-        return sol.t, sol.y, sol
+#    def integrate(self, t_end, t_eval=None, dense_output=True):
+#        """Integrate the system from current time to t_end.
+#
+#        Parameters
+#        ----------
+#        t_end : float
+#            Final time.
+#        t_eval : array_like, opt
+#            Times at which to store the computed solution, must be sorted
+#            and lie within current time and t_end. If None (default), use
+#            points selected by a solver.
+#        dense_output: bool, opt
+#            Whether to compute a continuous solution. Default is True.
+#
+#        Returns
+#        -------
+#        t : ndarray, shape (n_points,)
+#            Time points.
+#        y : ndarray, shape (n, n_points)
+#            Solution values at t.
+#        sol : Bunch object with the following fields defined:
+#            t : ndarray, shape (n_points,)
+#                Time points.
+#            y : ndarray, shape (n, n_points)
+#                Solution values at t.
+#            sol : OdeSolution or None
+#                Found solution as OdeSolution instance, None if dense_output
+#                was set to False.
+#            t_events : list of ndarray or None
+#                Contains arrays with times at each a corresponding event was
+#                detected, the length of the list equals to the number of
+#                events. None if events was None.
+#            nfev : int
+#                Number of the system rhs evaluations.
+#            njev : int
+#                Number of the Jacobian evaluations.
+#            nlu : int
+#                Number of LU decompositions.
+#            status : int
+#                Reason for algorithm termination:
+#                -1: Integration step failed.
+#                0: The solver successfully reached the interval end.
+#                1: A termination event occurred.
+#            message : string
+#                Verbal description of the termination reason.
+#            success : bool
+#            True if the solver reached the interval end or a termination event
+#             occurred (status >= 0).
+#        """
+#        # TODO: this mehtod is intended to return the whole integration history
+#        # meanwhile, only time_step is called
+#        # How dos it update the full system?
+#        x0 = self.state_vector
+#        t_ini = self.time
+#
+#        t_span = (t_ini, t_end)
+#        method = self._method
+#
+#        # TODO: prepare to use jacobian in case it is defined
+#        sol = solve_ivp(self.fun, t_span, x0, method=method, t_eval=t_eval,
+#                        dense_output=dense_output, **self._options)
+#
+#        self._time = sol.t[-1]
+#        self._state_vector = sol.y[:, -1]
+#
+#        return sol.t, sol.y, sol
 
     def time_step(self, dt):
         """Integrate the system from current time to t_end.
@@ -163,14 +165,23 @@ class DynamicSystem:
         method = self._method
 
         # TODO: prepare to use jacobian in case it is defined
-        sol = solve_ivp(self.fun_wrapped, t_span, x0, method=method,
-                        **self._options)
+#        sol = solve_ivp(self.fun_wrapped, t_span, x0, method=method,
+#                        **self._options)
 
-        if sol.status == -1:
-            raise RuntimeError(f"Integration did not converge at t={t_ini}")
 
-        self._time = sol.t[-1]
-        self._state_vector = sol.y[:, -1]
+#        sol = odeint(self.fun_wrapped, x0, t_span, args=self._options)
+        sol = odeint(self.fun_wrapped, x0, t_span)
+        
+        print('solution:', sol)
+    
+
+
+#        if sol.status == -1:
+#            raise RuntimeError("Integration did not converge")
+        self._time = t_ini + dt
+        self._state_vector = np.array(sol[0])
+#        self._time = sol.t[-1]
+#        self._state_vector = sol.y[:, -1]
 
         return self._state_vector
 

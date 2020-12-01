@@ -90,6 +90,7 @@ def steady_state_trim(aircraft, environment, pos, psi, TAS, controls, gamma=0,
 
     # Set initial state
     att0 = EulerAttitude(theta=0, phi=0, psi=psi)
+    
     vel0 = BodyVelocity(u=TAS, v=0, w=0, attitude=att0)
     # Full state
     state0 = AircraftState(pos, att0, vel0)
